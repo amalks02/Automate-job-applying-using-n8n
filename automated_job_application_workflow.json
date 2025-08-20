@@ -1,0 +1,637 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -3296,
+        -192
+      ],
+      "id": "9236e5d6-73d6-4a30-9c9f-6fbc59642e42",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://rss.app/feeds/fGbQYFh8fzJi9Xym.xml",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        -3088,
+        -192
+      ],
+      "id": "e1e8b13e-fe15-41b7-b79e-c8d554e7fac7",
+      "name": "RSS Read"
+    },
+    {
+      "parameters": {
+        "url": "=https://www.linkedin.com/jobs/view/4285859675/?alternateChannel=search&refId=ba950d7c-a9c1-4533-8a53-1900029d15a3&trackingId=b8Amiw3RQlOcmMLPtaCkFQ%3D%3D",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2512,
+        -176
+      ],
+      "id": "72e5e66a-2be0-48ab-abb4-a52d87654e84",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "you are in system role : you are an intelligent bot capable of pulling out data from a job listing site.",
+              "role": "model"
+            },
+            {
+              "content": "=here is the job site : {{ $json.data }}",
+              "role": "model"
+            },
+            {
+              "content": "your role is assistant, please output the data in JSON format, using following structure\n{\"Company Name\":\"\"\n\"Job role\":\"\"\n\"Benefits\":\"\", //401k plan, medical, etc, please separate by commas\n\"Job Description\":\"\", //please make it to less than or equal to 200 characters\n\"Location\":\"\"\n\"Contact\":\"\", // If the job posting provides a recruiter or hiring manager’s name, extract it.  \nIf no name is available, return \"Not available\". \n\"Company domain\":\"\", // Given a company name, return ONLY its official website domain (no extra text).\n\"Contact\":\"\", // contact persons name and company domain is provided make a email address using that to contact \n}\n"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        -2240,
+        -176
+      ],
+      "id": "5aadd91d-ae19-40c8-b7d4-d9aabf806ab7",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "FB6PCa3dT4U6XdGV",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse the nested JSON text\nconst raw = items[0].json.content.parts[0].text;\nconst job = JSON.parse(raw);\n\n// Clean / format fields\nconst cleaned = {\n  \"Company Name\": job[\"Company Name\"] || \"\",\n  \"Benefits\": job[\"Benefits\"] || \"\",\n  \"Job Description\": job[\"Job Description\"] \n    ? job[\"Job Description\"].slice(0, 200)  // limit to 200 chars\n    : \"\",\n  \"Job role\": job[\"Job role\"] || \"\",\n  \"Location\": job[\"Location\"] || \"\",\n  \"Contact\": job[\"Contact\"] || \"\",\n  \"Company domain\": job[\"Company domain\"] || \"\",\n  \"Contact Email\": job[\"Contact Email\"] || \"\"   // 👈 case corrected\n};\n\n// n8n requires array of { json: ... }\nreturn [\n  { json: cleaned }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1888,
+        -176
+      ],
+      "id": "9d55a71e-4257-4100-b1dc-da33b224b22b",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "your role is system, you are in system message mode, you are an intelligent bot, rating how closely a job listing is to a candidate skill set, on a score of 5.\nGive the following points:\na) 3 Points for skills matching, 1 point for mostly matching\nb) 1 Point for it being the right experience level\nc) 1 point for it being a remote position job role\nd) 1 point for if the past experience matching with the new job role \ne) 1 point if the skills on the resume matching with the job \nf) 3 points if I meet that job qualification posted based on my resume  \n",
+              "role": "model"
+            },
+            {
+              "content": "=Here is the job listing details:\n {{ $('HTTP Request').item.json.data }}"
+            },
+            {
+              "content": "Please return JSON data structure the following way:\n{\"Score\":\"\"}\n"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        -1456,
+        -176
+      ],
+      "id": "5fd8ebdc-6882-4973-97f0-23b3d274696a",
+      "name": "Message a model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "FB6PCa3dT4U6XdGV",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop through all incoming items\nreturn items.map(item => {\n  const raw = item.json.content.parts[0].text; // extract inner text\n  const parsed = JSON.parse(raw);              // convert string to object\n  return { json: parsed };                     // return clean object\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1136,
+        -176
+      ],
+      "id": "f8c7a3dd-3c83-4d34-a68a-b8f76b97d331",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "you are in system mode, you are an intelligent bot perfect at creating cover letters for a job. Please take the candidate resume for reference and create a customized cover letter to the job.",
+              "role": "model"
+            },
+            {
+              "content": "=Here is the job listing details :\nName : {{ $('Code').item.json['Company Name'] }}\nDescription :{{ $('Code').item.json['Job Description'] }}\n \nTitle :{{ $('RSS Read').item.json.title }}\nLocation :{{ $('Code').item.json.Location }}\n"
+            },
+            {
+              "content": "You are in assistant message mode, please return the cover letter as JSON structure as the following way:\n{\"Cover letter\":\"\"}\n"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        -720,
+        -176
+      ],
+      "id": "d81d39d3-f1ae-40ab-b834-a16c6732e5fc",
+      "name": "Message a model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "FB6PCa3dT4U6XdGV",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Flatten nested structure and parse the text JSON\nreturn items.map(item => {\n  const raw = item.json.content.parts[0].text; // extract \"text\"\n  const parsed = JSON.parse(raw);              // parse into real JSON\n  return { json: parsed };                     // return clean object\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        -192
+      ],
+      "id": "5439ea1e-f82b-48bc-82d7-67eb333c58b6",
+      "name": "Code2"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1dtNiY3nMVZ6r2LzoeFLjT5iND3K0pI64ektS1xUhfAg",
+          "mode": "list",
+          "cachedResultName": "linkdin_project",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dtNiY3nMVZ6r2LzoeFLjT5iND3K0pI64ektS1xUhfAg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dtNiY3nMVZ6r2LzoeFLjT5iND3K0pI64ektS1xUhfAg/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Title": "={{ $('RSS Read').item.json.title }}",
+            "Company Name": "={{ $('Code').item.json['Company Name'] }}",
+            "Job role": "={{ $('Code').item.json['Job role'] }}",
+            "Job Description": "={{ $('Code').item.json['Job Description'] }}",
+            "Link": "={{ $('RSS Read').item.json.link }}",
+            "Date": "={{ $('RSS Read').item.json.pubDate }}",
+            "Rating": "={{ $('Code1').item.json.Score }}",
+            "Location": "={{ $('Code').item.json.Location }}",
+            "Benefits": "={{ $('Code').item.json.Benefits }}",
+            "Contact": "={{ $('Code').item.json['Contact Email'] }}",
+            "Cover Letter": "={{ $json['Cover letter'] }}"
+          },
+          "matchingColumns": [
+            "Link"
+          ],
+          "schema": [
+            {
+              "id": "Title",
+              "displayName": "Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company Name",
+              "displayName": "Company Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Job role",
+              "displayName": "Job role",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Job Description",
+              "displayName": "Job Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Link",
+              "displayName": "Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Rating",
+              "displayName": "Rating",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Location",
+              "displayName": "Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Benefits",
+              "displayName": "Benefits",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Contact",
+              "displayName": "Contact",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Job Description",
+              "displayName": "Job Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cover Letter",
+              "displayName": "Cover Letter",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -128,
+        -192
+      ],
+      "id": "403303ba-6ba9-4cdd-a061-77ca32231225",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "HxUT9yuTVFzmQjuL",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.Contact }}",
+        "subject": "=Application for  {{ $json['Job role'] }} position",
+        "emailType": "text",
+        "message": "={{ $json['Cover Letter'] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        96,
+        -192
+      ],
+      "id": "b152105b-e6ad-4814-b6e4-ec352a73b06f",
+      "name": "Send a message",
+      "webhookId": "32412cee-d425-4a95-b53f-4922e2f593d8",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "bAOVZzN2H5vFM6Dy",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "75dea43e-94d4-4b6a-b753-7fa65bc8bac3",
+              "leftValue": "={{ $json['Contact Email'] }}",
+              "rightValue": "True",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1696,
+        -176
+      ],
+      "id": "4f3b6359-d1bb-4c7f-ae1c-99d1a149e8ae",
+      "name": "If"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        -2784,
+        -192
+      ],
+      "id": "b295156f-00ac-425d-8371-179054c3f2e9",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "fa2c4115-a1fe-41ce-9db9-2d81761b918a",
+              "leftValue": "={{ $json.Score }}",
+              "rightValue": 4,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -928,
+        -160
+      ],
+      "id": "5de58f22-3016-4e2e-babd-c94648bcdd43",
+      "name": "If1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "RSS Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model1": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model2": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Message a model1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Message a model2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "82c66938-748b-4ecc-8b05-a4b5dbb19b0c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4847a004fef1492ac6c0a742c7c4425fda1809f13eeaa59ae8cd4b9bfce37837"
+  },
+  "id": "3BjQSOmDOOADfQJx",
+  "tags": []
+}
