@@ -98,3 +98,13 @@ All processed jobs are also stored in Google Sheets for tracking.
 - Add credentials (Gemini, Google Sheets, Gmail).
 
 - Deploy – workflow will run daily as configured.
+
+## Screenshots
+### Google Sheet Sample
+<img width="1920" height="576" alt="linkdin_project - Google Sheets - Google Chrome 20-08-2025 19_21_33" src="https://github.com/user-attachments/assets/12239e24-0113-4d0c-b5a2-009ffc71b532" />
+
+### n8n Workflow 
+<img width="1643" height="251" alt="▶️ My workflow - n8n and 4 more pages - Personal - Microsoft​ Edge 20-08-2025 19_57_27" src="https://github.com/user-attachments/assets/cb007ac8-3190-445a-8547-92165912297a" />
+
+### email sample
+<img width="1516" height="741" alt="linkdin_project - Google Sheets - Google Chrome 20-08-2025 19_22_38" src="https://github.com/user-attachments/assets/5c4ec4c5-5225-414f-a706-dd08a4b25f19" />
